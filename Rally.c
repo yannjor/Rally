@@ -4,7 +4,6 @@
 #include "Rally.h"
 
 
-
 /*Adds a driver named "lastname" and who is representing "team" to buffer of length "size".
   Returns 1 if the operation was successful, 0 otherwise.*/
 
@@ -85,12 +84,13 @@ int load_results(driver *buffer, const char *filename) {
     while(fgets(row, 100, fp)) {
         buffer = realloc(buffer, sizeof(driver) * (i + 2));
         int h, min, sec;
-        sscanf(row, "%s - %s - %dh %dmin %ds\n", buffer[i].lastname, buffer[i].lastname, &h, &min, &sec);
+        sscanf(row, "%s %s %d %d %d", buffer[i].lastname, buffer[i].team, &h, &min, &sec);
         buffer[i].time = (h * 3600) + (min * 60) + sec;
         i++;
     }
     buffer = realloc(buffer, sizeof(driver) * (i + 2));
     buffer[i+1].lastname[0] = '\0';
+    fclose(fp);
     return 1;
 }
 
@@ -106,14 +106,51 @@ int main() {
     driver *buffer = malloc(sizeof(driver));
     buffer->lastname[0] = '\0';
 
-    add_driver(buffer, "Kankkunen", "Renault");
+    char row[256];
+    char command;
+    char lastname[50];
+    char team[50];
+    char filename[50];
+
+
+    while(1) {
+
+        fgets(row, 256, stdin);
+
+        sscanf(row, "%c", &command);
+
+        if (command == 'A') {
+            sscanf(row, "%*c %s %s", lastname, team);
+            add_driver(buffer, lastname, team);
+        } else if (command == 'U') {
+            int h, min, sec;
+            sscanf(row, "%*c %s %d %d %d", lastname, &h, &min, &sec);
+            int time = (h * 3600) + (min * 60) + sec;
+            update_time(buffer, lastname, time);
+        } else if (command == 'L') {
+            print_results(buffer);
+        } else if (command == 'W') {
+            sscanf(row, "%*c %s", filename);
+            write_results(buffer, filename);
+        } else if (command == 'O') {
+            //sscanf(row, "%*c, %s", filename);
+        } else if (command == 'Q') {
+            break;
+        } else {
+            printf("Unknown command");
+        }
+    }
+
+
+
+
+    /*add_driver(buffer, "Kankkunen", "Renault");
     update_time(buffer, "Kankkunen", 4325);
     add_driver(buffer, "Räikkönen", "Peugeot");
     update_time(buffer, "Räikkönen", 3333);
     add_driver(buffer, "Svakar Teknolog", "Lada");
     update_time(buffer, "Svakar Teknolog", 333333);
     print_results(buffer);
-    write_results(buffer, "results.txt");
-
+    write_results(buffer, "results.txt");*/
     return 1;
 }
