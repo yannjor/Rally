@@ -4,153 +4,156 @@
 #include "Rally.h"
 
 
-/*Adds a driver named "lastname" and who is representing "team" to buffer of length "size".
-  Returns 1 if the operation was successful, 0 otherwise.*/
 
-int add_driver(driver *buffer, char *lastname, char *team) {
-    int i;
-    for (i = 0; buffer[i].lastname[0] != '\0'; i++) //Find out the size of buffer
+
+Driver *add_driver(Driver *arr, int size, const char *p_lastname, const char *p_team) {
     
-    buffer = realloc(buffer, (i + 2) * sizeof(driver));
-    if (!buffer) return 0;  //if memory allocation failed
-    strcpy(buffer[i].lastname, lastname);
-    strcpy(buffer[i].team, team);
-    buffer[i].time = 0;  //Initially the total time is 0
-    buffer[i+1].lastname[0] = '\0';
-    return 1;
+
+    Driver *ret_arr = realloc(arr, (size + 1) * sizeof(Driver));
+    if (!ret_arr) printf("Memory allocation failed\n");
+
+    ret_arr[size].lastname = malloc(strlen(p_lastname) + 1);
+    ret_arr[size].team = malloc(strlen(p_team) + 1);
+
+    strcpy(ret_arr[size].lastname, p_lastname);
+    strcpy(ret_arr[size].team, p_team);
+    ret_arr[size].time = 0;  //Initially the total time is 0
+
+    printf("Added driver '%s' to the race\n", p_lastname);  
+    return ret_arr;
 }
 
 
-void update_time(driver *buffer, char *lastname, int time) {
+void update_time(Driver *arr, int size, char *lastname, int time) {
     int flag = 0;
-    for (int i = 0; buffer[i].lastname[0] != '\0'; i++) {
-        if (!strcmp(buffer[i].lastname, lastname)) {
-            buffer[i].time += time;
+    for (int i = 0; i < size; i++) {
+        if (!strcmp(arr[i].lastname, lastname)) {
+            arr[i].time += time;
             flag = 1;
         }
     }
-    if (!flag) printf("ERROR: Did not find driver: '%s'\n", lastname);
+    if (!flag) printf("Did not find driver '%s'\n", lastname);
+    else printf("Updated time for driver '%s'\n", lastname);
 }
 
 //Helper function for print_results:
 
 int compare (const void* p1, const void* p2) {
-    driver a = *(driver*)p1;
-    driver b  = *(driver*)p2;
+    Driver a = *(Driver*)p1;
+    Driver b  = *(Driver*)p2;
     if (a.time < b.time) return -1;
     else if (a.time > b.time) return 1;
     else return 0;
 }
 
 
-void print_results(driver *buffer) {
-    //First sort the buffer
-    int j;
-    for (j = 0; buffer[j].lastname[0] != '\0'; j++);    
-    qsort(buffer, j, sizeof(driver), compare);
+void print_results(Driver *arr, int size) {
+    
+    if (size == 0) printf("There are no drivers in the race\n");
+    else {
+        //First sort the buffer
 
-    //Then print
-    printf("Current results of the race:\n\n");
-    for (int i = 0; buffer[i].lastname[0] != '\0'; i++) {
-        printf("%s - %s - %dh %dmin %ds\n", buffer[i].lastname, buffer[i].team, buffer[i].time / 3600,
-        (buffer[i].time % 3600) / 60, (buffer[i].time % 3600) % 60);
+        qsort(arr, size, sizeof(Driver), compare);
+        //Then print
+
+        for (int i = 0; i < size ; i++) {
+            printf("%s - %s - %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
+            (arr[i].time % 3600) / 60, (arr[i].time % 3600) % 60);
+        }
     }
 }
 
 
-int write_results(driver *buffer, const char *filename) {
+int write_results(Driver *arr, int size, const char *filename) {
     FILE *fp = fopen(filename, "w");
     if (!fp) return 0;
 
-    for (int i = 0; buffer[i].lastname[0] != '\0'; i++) {
-        fprintf(fp, "%s - %s - %dh %dmin %ds\n", buffer[i].lastname, buffer[i].team, buffer[i].time / 3600,
-        (buffer[i].time % 3600) / 60, (buffer[i].time % 3600) % 60);
+    for (int i = 0; i < size; i++) {
+        fprintf(fp, "%s - %s - %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
+        (arr[i].time % 3600) / 60, (arr[i].time % 3600) % 60);
     }
     fclose(fp);
     return 1;
 }
 
 
-//Doesn't currently work...
-
-int load_results(driver *buffer, const char *filename) {
+Driver *load_results(Driver *arr, int *size, const char *filename) {
     FILE *fp = fopen(filename, "r");
-    if (!fp) return 0;
+    if (!fp) {
+        printf("Failed to open file '%s'\n", filename);
+        return arr;
+    }
+    Driver *ret_arr = realloc(arr, sizeof(Driver));
 
-    buffer = realloc(buffer, sizeof(driver));
     char row[100];
     int i = 0;
+    char name[30];
+    char team[30];
+
 
     while(fgets(row, 100, fp)) {
-        buffer = realloc(buffer, sizeof(driver) * (i + 2));
+        ret_arr = realloc(ret_arr, sizeof(Driver) * (i + 1));
         int h, min, sec;
-        sscanf(row, "%s %s %d %d %d", buffer[i].lastname, buffer[i].team, &h, &min, &sec);
-        buffer[i].time = (h * 3600) + (min * 60) + sec;
+        sscanf(row, "%s - %s - %dh %dmin %ds\n", name, team, &h, &min, &sec);
+        ret_arr[i].lastname = malloc(strlen(name) + 1);
+        ret_arr[i].team = malloc(strlen(team) + 1);
+        strcpy(ret_arr[i].lastname, name);
+        strcpy(ret_arr[i].team, team);
+        ret_arr[i].time = (h * 3600) + (min * 60) + sec;
+        (*size)++;
         i++;
     }
-    buffer = realloc(buffer, sizeof(driver) * (i + 2));
-    buffer[i+1].lastname[0] = '\0';
-    fclose(fp);
-    return 1;
-}
 
-void exit_program(driver *buffer) {
-    printf("Exiting program...\n");
-    free(buffer);
-    exit(0);
+    fclose(fp);
+    return ret_arr;
 }
 
 
 int main() {
     
-    driver *buffer = malloc(sizeof(driver));
-    buffer->lastname[0] = '\0';
+    Driver *driver_arr = malloc(sizeof(Driver));
+    
 
+    int len = 0;
     char row[256];
     char command;
-    char lastname[50];
-    char team[50];
-    char filename[50];
+    char name[30];
+    char team_name[30];
+    char file_name[30];
 
 
     while(1) {
 
-        fgets(row, 256, stdin);
-
+        fgets(row, 255, stdin);
         sscanf(row, "%c", &command);
 
         if (command == 'A') {
-            sscanf(row, "%*c %s %s", lastname, team);
-            add_driver(buffer, lastname, team);
+            sscanf(row, "%*c %s %s", name, team_name);
+            driver_arr = add_driver(driver_arr, len, name, team_name);
+            len++;
         } else if (command == 'U') {
             int h, min, sec;
-            sscanf(row, "%*c %s %d %d %d", lastname, &h, &min, &sec);
+            sscanf(row, "%*c %s %d %d %d", name, &h, &min, &sec);
             int time = (h * 3600) + (min * 60) + sec;
-            update_time(buffer, lastname, time);
+            update_time(driver_arr, len, name, time);
         } else if (command == 'L') {
-            print_results(buffer);
+            print_results(driver_arr, len);
         } else if (command == 'W') {
-            sscanf(row, "%*c %s", filename);
-            write_results(buffer, filename);
+            sscanf(row, "%*c %s", file_name);
+            if (write_results(driver_arr, len, file_name)) {
+                printf("Wrote current results into file '%s' successfully\n", file_name);
+            } else printf("Failed to write results");
         } else if (command == 'O') {
-            //sscanf(row, "%*c, %s", filename);
+            sscanf(row, "%*c %s", file_name);
+            driver_arr = load_results(driver_arr, &len, file_name);
         } else if (command == 'Q') {
+            printf("Exiting program...\n");
+            free(driver_arr);
             break;
         } else {
-            printf("Unknown command");
+            printf("Unknown command: '%c'\n", command);
         }
     }
-
-
-
-
-    /*add_driver(buffer, "Kankkunen", "Renault");
-    update_time(buffer, "Kankkunen", 4325);
-    add_driver(buffer, "Räikkönen", "Peugeot");
-    update_time(buffer, "Räikkönen", 3333);
-    add_driver(buffer, "Svakar Teknolog", "Lada");
-    update_time(buffer, "Svakar Teknolog", 333333);
-    print_results(buffer);
-    write_results(buffer, "results.txt");*/
+    
     return 1;
 }

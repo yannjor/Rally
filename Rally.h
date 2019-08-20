@@ -2,9 +2,9 @@
 #define	YJ_RALLY_H
 
 typedef struct {
-    char lastname[30];
-    char team[30];
+    char *lastname;
+    char *team;
     int time;
-} driver;
+} Driver;
 
 #endif
