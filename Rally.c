@@ -63,7 +63,7 @@ void print_results(Driver *arr, int size) {
             printf("%s %s %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
             (arr[i].time % 3600) / 60, (arr[i].time % 3600) % 60);
         }
-        printf("\nPrinted results succesfully\n");
+        printf("\nPrinted results successfully\n");
     }
 }
 
