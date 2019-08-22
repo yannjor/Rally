@@ -5,7 +5,7 @@
 
 
 Driver *add_driver(Driver *arr, int size, const char *p_lastname, const char *p_team) {
-    
+
     Driver *ret_arr = realloc(arr, (size + 1) * sizeof(Driver));
 
     if (!ret_arr) {
@@ -14,12 +14,10 @@ Driver *add_driver(Driver *arr, int size, const char *p_lastname, const char *p_
     } 
 
     //First we allocate memory for the strings
-
     ret_arr[size].lastname = malloc(strlen(p_lastname) + 1);
     ret_arr[size].team = malloc(strlen(p_team) + 1);
 
     //Then copy them
-
     strcpy(ret_arr[size].lastname, p_lastname);
     strcpy(ret_arr[size].team, p_team);
     ret_arr[size].time = 0;  //Initially the total time is 0
@@ -41,7 +39,7 @@ void update_time(Driver *arr, int size, char *lastname, int time) {
     else printf("Updated time for driver '%s'\n", lastname);
 }
 
-//Helper function for sorting the array with qsort in function print_results:
+//Helper function for sorting the array with qsort in the following functions
 
 int compare (const void* p1, const void* p2) {
     Driver a = *(Driver*)p1;
@@ -59,11 +57,13 @@ void print_results(Driver *arr, int size) {
         //First sort the buffer
         qsort(arr, size, sizeof(Driver), compare);
         //Then print
+        printf("\n");
         for (int i = 0; i < size ; i++) {
             //We need to convert the time in seconds to hours, minutes and seconds.
-            printf("%s - %s - %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
+            printf("%s %s %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
             (arr[i].time % 3600) / 60, (arr[i].time % 3600) % 60);
         }
+        printf("\nPrinted results succesfully\n");
     }
 }
 
@@ -77,7 +77,7 @@ void write_results(Driver *arr, int size, const char *filename) {
 
     qsort(arr, size, sizeof(Driver), compare);
     for (int i = 0; i < size; i++) {
-        fprintf(fp, "%s - %s - %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
+        fprintf(fp, "%s %s %dh %dmin %ds\n", arr[i].lastname, arr[i].team, arr[i].time / 3600,
         (arr[i].time % 3600) / 60, (arr[i].time % 3600) % 60);
     }
     fclose(fp);
@@ -93,15 +93,20 @@ Driver *load_results(Driver *arr, int *size, const char *filename) {
     }
     Driver *ret_arr = realloc(arr, sizeof(Driver));
 
-    char row[100];
+    if (!ret_arr) {
+        printf("Memory allocation failed when loading results");
+        return arr;
+    }
+
+    char line[100]; //Used for storing the contents of the current line of the file to analyze it with sscanf
     int i = 0;
     char lastname[30];
     char team[30];
 
-    while(fgets(row, 100, fp)) {
+    while(fgets(line, 100, fp)) {
         ret_arr = realloc(ret_arr, sizeof(Driver) * (i + 1));
         int h, min, sec;
-        sscanf(row, "%s - %s - %dh %dmin %ds\n", lastname, team, &h, &min, &sec);
+        sscanf(line, "%s %s %dh %dmin %ds\n", lastname, team, &h, &min, &sec);
         ret_arr[i].lastname = malloc(strlen(lastname) + 1);
         ret_arr[i].team = malloc(strlen(team) + 1);
         strcpy(ret_arr[i].lastname, lastname);
@@ -109,7 +114,7 @@ Driver *load_results(Driver *arr, int *size, const char *filename) {
         ret_arr[i].time = (h * 3600) + (min * 60) + sec;
         i++;
     }
-    *size = i;
+    *size = i; //Update the size so the main function knows
     fclose(fp);
     printf("Succesfully loaded results from file '%s'\n", filename);
     return ret_arr;
@@ -118,7 +123,7 @@ Driver *load_results(Driver *arr, int *size, const char *filename) {
 
 void quit_program(Driver *arr, int size) {
     printf("Exiting program...\n");
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {  //Go through all drivers and free their names and teams
         free(arr[i].lastname);
         free(arr[i].team);
     }
@@ -128,14 +133,7 @@ void quit_program(Driver *arr, int size) {
 
 int main() {
     
-    Driver *driver_arr = malloc(sizeof(Driver));
-    
-    int len = 0;
-    char row[256];
-    char command;
-    char name[30];
-    char team_name[30];
-    char file_name[30];
+    //Welcome screen
 
     printf("--- Welcome to the Rally-Results Program! ---\n\n"
     "1. Use function: 'A lastname team' to add a new driver to the race\n"
@@ -145,9 +143,20 @@ int main() {
     "5. Use function: 'O filename' to load previous rally results from a file.\n"
     "6. Use function: 'Q' to quit.\n\n");
 
+
+    Driver *driver_arr = malloc(sizeof(Driver));  //Used for storing all the drivers in the race
+    
+    int len = 0;  //length of the driver array
+    char row[256]; //Used for storing the user's input, to then analyze it with sscanf
+    char command;  //Used for storing the current command
+    char name[30];  //Used for storing the current driver's lastname
+    char team_name[30]; //Used for storing the current driver's teamname
+    char file_name[30]; //Used for storing the file name for loading and printing to files
+
     while(1) {
 
         fgets(row, 255, stdin);
+        //First check the command
         sscanf(row, "%c", &command);
 
         if (command == 'A') {
