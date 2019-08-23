@@ -4,9 +4,18 @@
 #include "Rally.h"
 
 
-Driver *add_driver(Driver *arr, int size, const char *p_lastname, const char *p_team) {
+Driver *add_driver(Driver *arr, int *size, const char *p_lastname, const char *p_team) {
 
-    Driver *ret_arr = realloc(arr, (size + 1) * sizeof(Driver));
+    //First we check if the driver is not already in the race
+    int n = *size;
+    for (int i = 0; i < n; i++) {
+        if (!strcmp(arr[i].lastname, p_lastname)) {
+            printf("Driver '%s' is already in the race\n", p_lastname);
+            return arr;
+        }
+    }
+
+    Driver *ret_arr = realloc(arr, (n + 1) * sizeof(Driver));
 
     if (!ret_arr) {
         printf("Memory allocation failed when adding driver\n");
@@ -14,14 +23,14 @@ Driver *add_driver(Driver *arr, int size, const char *p_lastname, const char *p_
     } 
 
     //First we allocate memory for the strings
-    ret_arr[size].lastname = malloc(strlen(p_lastname) + 1);
-    ret_arr[size].team = malloc(strlen(p_team) + 1);
+    ret_arr[n].lastname = malloc(strlen(p_lastname) + 1);
+    ret_arr[n].team = malloc(strlen(p_team) + 1);
 
     //Then copy them
-    strcpy(ret_arr[size].lastname, p_lastname);
-    strcpy(ret_arr[size].team, p_team);
-    ret_arr[size].time = 0;  //Initially the total time is 0
-
+    strcpy(ret_arr[n].lastname, p_lastname);
+    strcpy(ret_arr[n].team, p_team);
+    ret_arr[n].time = 0;  //Initially the total time is 0
+    (*size)++;
     printf("Added driver '%s' to the race\n", p_lastname);  
     return ret_arr;
 }
@@ -161,8 +170,7 @@ int main() {
 
         if (command == 'A') {
             sscanf(row, "%*c %s %s", name, team_name);
-            driver_arr = add_driver(driver_arr, len, name, team_name);
-            len++;
+            driver_arr = add_driver(driver_arr, &len, name, team_name);
         } else if (command == 'U') {
             int h, min, sec;
             sscanf(row, "%*c %s %d %d %d", name, &h, &min, &sec);
